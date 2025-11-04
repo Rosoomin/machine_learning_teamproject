@@ -18,8 +18,8 @@ def run_experiment(
     samples_per_class=100,
     num_augment=0,
     epochs=100,
-    batch_size=128,
-    lr=0.1,
+    batch_size=64,
+    lr=0.05,
     use_generated=False,
     generated_path=None
 ):
@@ -163,8 +163,8 @@ if __name__ == "__main__":
     print("="*70)
     
     # 실험 설정 (여기만 수정하면 됨!)
-    SAMPLES_PER_CLASS = 10  # 클래스당 원본 이미지 수
-    EPOCHS = 5             # 학습 에포크
+    SAMPLES_PER_CLASS = 100  # 클래스당 원본 이미지 수
+    EPOCHS = 100             # 학습 에포크
     
     # 실험 1: Baseline (원본 1,000장)
     print("\n" + "="*70)
