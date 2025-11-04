@@ -1,0 +1,16 @@
+torch
+torchvision
+torchaudio
+diffusers
+transformers
+accelerate
+peft
+albumentations
+opencv-python
+pillow
+numpy
+pandas
+matplotlib
+seaborn
+tqdm
+scikit-learn
