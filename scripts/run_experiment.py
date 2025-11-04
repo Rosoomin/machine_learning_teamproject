@@ -7,8 +7,8 @@ import torch
 import os
 from pathlib import Path
 
-from data_preparation import create_few_shot_cifar10, prepare_test_dataset
-from augmentation import create_augmented_dataset
+from data_preparation import create_few_shot_cifar10  # ✅ A안: 테스트셋 정규화 여기서 처리
+from augmentation import create_augmented_dataset, AugmentedDataset
 from models import get_resnet18_cifar10
 from train import train_classifier
 
@@ -62,7 +62,6 @@ def run_experiment(
         train_data = create_augmented_dataset(train_original, num_augment=num_augment)
     else:
         print("📌 원본 데이터만 사용")
-        from augmentation import AugmentedDataset
         train_data = AugmentedDataset(train_original, augmentation=None, num_augment=0)
     
     # 4. 생성 이미지 추가 (TODO: 나중에 구현)
@@ -164,8 +163,8 @@ if __name__ == "__main__":
     print("="*70)
     
     # 실험 설정 (여기만 수정하면 됨!)
-    SAMPLES_PER_CLASS = 100  # 클래스당 원본 이미지 수
-    EPOCHS = 100             # 학습 에포크
+    SAMPLES_PER_CLASS = 10  # 클래스당 원본 이미지 수
+    EPOCHS = 5             # 학습 에포크
     
     # 실험 1: Baseline (원본 1,000장)
     print("\n" + "="*70)

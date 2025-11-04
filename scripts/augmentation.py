@@ -71,7 +71,7 @@ class AugmentedDataset(Dataset):
         if isinstance(img, torch.Tensor):
             img = transforms.ToPILImage()(img)
         elif isinstance(img, np.ndarray):  # numpy 배열일 수도
-         img = Image.fromarray(img)
+            img = Image.fromarray(img)
     
     # ✨ 크기 확인 및 리사이즈 (다운샘플링)
         if img.size != (32, 32):
