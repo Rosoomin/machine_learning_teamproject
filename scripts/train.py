@@ -37,7 +37,7 @@ def _evaluate(model, loader, device):
 
 
 def train_classifier(model, train_dataset, test_dataset,
-                     epochs=50, batch_size=128, lr=0.1,
+                     epochs=100, batch_size=128, lr=0.05,
                      device='cuda', save_path='./models/best.pth'):
     device = device if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
@@ -103,9 +103,9 @@ def parse_args():
                    help="원본 1장당 생성할 증강 수 (1이면 2배)")
     p.add_argument("--use_sd", action="store_true",
                    help="Stable Diffusion 생성 이미지 포함 여부")
-    p.add_argument("--epochs", type=int, default=50)
+    p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--batch_size", type=int, default=128)
-    p.add_argument("--lr", type=float, default=0.1)
+    p.add_argument("--lr", type=float, default=0.05)
     p.add_argument("--model", type=str, default="resnet18")
     p.add_argument("--save_path", type=str, default="./models/best.pth")
     return p.parse_args()
