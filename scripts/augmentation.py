@@ -123,3 +123,42 @@ if __name__ == "__main__":
     img, label = aug_data[0]
     print(f"   이미지 shape: {img.shape}")
     print(f"   레이블: {label}")
+
+# --- 추가 유틸: 외부 스크립트에서 재사용할 다운샘플 함수 ---
+def downsample_to_32(img, resample="lanczos"):
+    """
+    Stable Diffusion이 생성한 512x512 이미지를 CIFAR-10 학습 크기(32x32)로 변환.
+    - augmentation 파이프라인과 일관성을 위해 기본 보간법을 LANCZOS로 고정
+    - PIL.Image 또는 Tensor/ndarray 모두 허용 (PIL Image로 변환 뒤 처리)
+
+    Args:
+        img: PIL.Image.Image | torch.Tensor | np.ndarray
+        resample: "lanczos"|"bicubic"|"bilinear" 등 (기본 lanczos)
+
+    Returns:
+        PIL.Image.Image (32x32, RGB)
+    """
+    from PIL import Image
+    import torchvision.transforms as T
+    import torch
+    import numpy as np
+
+    if isinstance(img, torch.Tensor):
+        img = T.ToPILImage()(img)
+    elif isinstance(img, np.ndarray):
+        img = Image.fromarray(img)
+    else:
+        # PIL이면 그대로 진행
+        pass
+
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+
+    method_map = {
+        "lanczos": Image.LANCZOS,
+        "bicubic": Image.BICUBIC,
+        "bilinear": Image.BILINEAR,
+        "nearest": Image.NEAREST,
+    }
+    method = method_map.get(resample.lower(), Image.LANCZOS)
+    return img.resize((32, 32), method)

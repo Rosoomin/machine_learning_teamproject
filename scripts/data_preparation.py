@@ -78,6 +78,69 @@ def get_class_names():
         'dog', 'frog', 'horse', 'ship', 'truck'
     ]
 
+# ------------------------------------------------------------
+# Stable Diffusion으로 생성된 이미지(sd32)를 CIFAR-10과 병합하는 함수
+# ------------------------------------------------------------
+from torchvision import transforms, datasets
+from torchvision.datasets import ImageFolder
+from torch.utils.data import ConcatDataset
+from pathlib import Path
+
+def build_cifar10_with_sd(split="train",
+                          cifar_root="./data/cifar10",
+                          sd_root="./data/aug/sd32",
+                          include_sd=True,
+                          samples_per_class=100,
+                          seed=42):
+    """
+    CIFAR-10 few-shot subset + Stable Diffusion으로 생성된 sd32 이미지 병합
+
+    Args:
+        split: "train" | "test"
+        cifar_root: CIFAR-10 경로
+        sd_root: Stable Diffusion 32x32 이미지 폴더
+        include_sd: 생성 이미지 포함 여부
+        samples_per_class: few-shot에서 클래스당 사용할 샘플 수
+        seed: 랜덤 시드 (재현성)
+
+    Returns:
+        Dataset (ConcatDataset or CIFAR-10 testset)
+    """
+    set_seed(seed)
+    normalize = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465),
+                             (0.2023, 0.1994, 0.2010))
+    ])
+
+    if split == "train":
+        # 원본 few-shot 훈련 세트 생성 (transform=None)
+        train_subset, _ = create_few_shot_cifar10(
+            samples_per_class=samples_per_class,
+            data_dir=cifar_root,
+            seed=seed
+        )
+
+        # 생성 이미지(sd32) 병합
+        if include_sd and Path(sd_root).exists():
+            sd_dataset = ImageFolder(root=sd_root, transform=normalize)
+            print(f"✅ Stable Diffusion 생성 이미지 불러옴: {len(sd_dataset):,}장")
+            return ConcatDataset([train_subset, sd_dataset])
+        else:
+            print("⚠️ Stable Diffusion 이미지 없음 또는 비활성화 상태.")
+            return train_subset
+
+    else:
+        # 테스트셋은 항상 정규화만 적용
+        testset = datasets.CIFAR10(
+            root=cifar_root,
+            train=False,
+            download=True,
+            transform=normalize
+        )
+        return testset
+
+
 
 if __name__ == "__main__":
     train_data, test_data = create_few_shot_cifar10(samples_per_class=100)

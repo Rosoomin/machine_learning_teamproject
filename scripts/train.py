@@ -4,6 +4,12 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torcheval.metrics import MulticlassAccuracy
 
+import argparse
+import os
+from data_preparation import create_few_shot_cifar10, build_cifar10_with_sd
+from augmentation import create_augmented_dataset
+from models import get_resnet18_cifar10
+
 
 def _make_loader(dataset, batch_size, train, num_workers=2):
     return DataLoader(
@@ -86,3 +92,70 @@ def train_classifier(model, train_dataset, test_dataset,
     # 최고 성능 가중치 로드
     model.load_state_dict(torch.load(save_path, map_location=device))
     return model, history
+
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--samples_per_class", type=int, default=100,
+                   help="클래스당 사용할 CIFAR-10 원본 샘플 수")
+    p.add_argument("--use_trad_aug", action="store_true",
+                   help="전통적 증강 적용 (원본 + 증강)")
+    p.add_argument("--num_augment", type=int, default=1,
+                   help="원본 1장당 생성할 증강 수 (1이면 2배)")
+    p.add_argument("--use_sd", action="store_true",
+                   help="Stable Diffusion 생성 이미지 포함 여부")
+    p.add_argument("--epochs", type=int, default=50)
+    p.add_argument("--batch_size", type=int, default=128)
+    p.add_argument("--lr", type=float, default=0.1)
+    p.add_argument("--model", type=str, default="resnet18")
+    p.add_argument("--save_path", type=str, default="./models/best.pth")
+    return p.parse_args()
+
+
+def main():
+    args = parse_args()
+    os.makedirs(os.path.dirname(args.save_path), exist_ok=True)
+
+    # 1️⃣ 기본 데이터셋: few-shot CIFAR-10
+    train_subset, testset = create_few_shot_cifar10(samples_per_class=args.samples_per_class)
+
+    # 2️⃣ 증강 옵션 처리
+    if args.use_trad_aug:
+        # --- 전통적 증강 적용 ---
+        train_ds = create_augmented_dataset(train_subset, num_augment=args.num_augment)
+        print(f"✅ 전통적 증강 적용 완료! (원본+증강 총 {len(train_ds)}장)")
+    elif args.use_sd:
+        # --- Stable Diffusion 생성 이미지 포함 ---
+        train_ds = build_cifar10_with_sd(
+            split="train",
+            include_sd=True,
+            samples_per_class=args.samples_per_class
+        )
+        print(f"✅ 생성형 이미지 포함 완료! (총 {len(train_ds)}장)")
+    else:
+        # --- 원본만 ---
+        train_ds = train_subset
+        print(f"✅ 원본 데이터만 사용 ({len(train_ds)}장)")
+
+    test_ds = testset
+
+    # 3️⃣ 모델 준비
+    model = get_resnet18_cifar10(num_classes=10)
+
+    # 4️⃣ 학습 실행
+    model, hist = train_classifier(
+        model=model,
+        train_dataset=train_ds,
+        test_dataset=test_ds,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        device="cuda",
+        save_path=args.save_path
+    )
+
+    print(f"\n🎯 Best test accuracy: {hist['best_acc']:.4f}")
+    print(f"📁 Saved model: {args.save_path}")
+
+
+if __name__ == "__main__":
+    main()
