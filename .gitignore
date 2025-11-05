@@ -5,7 +5,8 @@ venv/
 env/
 
 # Data
-data/
+data/aug/
+data/cifar10/
 *.pth
 *.pt
 
