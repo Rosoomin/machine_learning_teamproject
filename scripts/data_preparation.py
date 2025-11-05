@@ -23,7 +23,8 @@ def set_seed(s=42):
         pass
 
 
-def create_few_shot_cifar10(samples_per_class=100, data_dir='./data/cifar10', seed=42):
+def create_few_shot_cifar10(samples_per_class=100, data_dir='./data/cifar10', seed=42,
+                             train_transform=None):
     """
     CIFAR-10에서 클래스당 지정된 개수만큼 샘플링 (train),
     test는 정규화(transform) 적용해서 반환 (A안)
@@ -37,12 +38,12 @@ def create_few_shot_cifar10(samples_per_class=100, data_dir='./data/cifar10', se
                              (0.2023, 0.1994, 0.2010))
     ])
 
-    # train: transform=None (원본 유지 후 Subset으로 few-shot)
+    # train: transform=None (원본 유지 후 Subset으로 few-shot) --> train_transform 으로 변경완
     trainset = torchvision.datasets.CIFAR10(
         root=data_dir,
         train=True,
         download=True,
-        transform=None
+        transform=train_transform
     )
 
     # test: 정규화 적용
@@ -141,10 +142,10 @@ def build_cifar10_with_sd(split="train",
         train_subset, _ = create_few_shot_cifar10(
             samples_per_class=samples_per_class,
             data_dir=cifar_root,
-            seed=seed
+            seed=seed,
+            train_transform=normalize,
         )
-        # 원본 few-shot도 Tensor+Normalize 적용
-        train_subset = TransformSubset(train_subset, normalize)
+        
 
         # 생성 이미지(sd32) 병합
         if include_sd and Path(sd_root).exists():
