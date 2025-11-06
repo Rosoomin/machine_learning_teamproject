@@ -8,7 +8,8 @@ import argparse
 import os
 from data_preparation import create_few_shot_cifar10, build_cifar10_with_sd
 from augmentation import create_augmented_dataset
-from models import get_resnet18_cifar10
+from models_custom import get_resnet18_cifar10
+
 
 
 def _make_loader(dataset, batch_size, train, num_workers=2):

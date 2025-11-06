@@ -9,7 +9,7 @@ import torch
 
 from data_preparation import create_few_shot_cifar10, build_cifar10_with_sd
 from augmentation import create_augmented_dataset, AugmentedDataset
-from models import get_resnet18_cifar10
+from models_custom import get_resnet18_cifar10
 from train import train_classifier
 
 
