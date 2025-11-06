@@ -7,7 +7,7 @@ import random
 import numpy as np
 import torchvision
 import torchvision.transforms as transforms
-from torch.utils.data import Subset
+from torch.utils.data import Subset, Dataset
 
 
 def set_seed(s=42):
@@ -23,7 +23,8 @@ def set_seed(s=42):
         pass
 
 
-def create_few_shot_cifar10(samples_per_class=100, data_dir='./data/cifar10', seed=42):
+def create_few_shot_cifar10(samples_per_class=100, data_dir='./data/cifar10', seed=42,
+                             train_transform=None):
     """
     CIFAR-10에서 클래스당 지정된 개수만큼 샘플링 (train),
     test는 정규화(transform) 적용해서 반환 (A안)
@@ -37,12 +38,12 @@ def create_few_shot_cifar10(samples_per_class=100, data_dir='./data/cifar10', se
                              (0.2023, 0.1994, 0.2010))
     ])
 
-    # train: transform=None (원본 유지 후 Subset으로 few-shot)
+    # train: transform=None (원본 유지 후 Subset으로 few-shot) --> train_transform 으로 변경완
     trainset = torchvision.datasets.CIFAR10(
         root=data_dir,
         train=True,
         download=True,
-        transform=None
+        transform=train_transform
     )
 
     # test: 정규화 적용
@@ -77,6 +78,29 @@ def get_class_names():
         'airplane', 'automobile', 'bird', 'cat', 'deer',
         'dog', 'frog', 'horse', 'ship', 'truck'
     ]
+
+# --- Subset(PIL)을 Tensor+Normalize로 바꿔주는 래퍼 ---
+class TransformSubset(Dataset):
+    def __init__(self, subset, transform):
+        self.subset = subset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.subset)
+
+    def __getitem__(self, idx):
+        img, label = self.subset[idx]  # 보통 PIL Image
+        # 혹시 텐서/넘파이인 경우도 안전하게 처리
+        import torch
+        from PIL import Image
+        if isinstance(img, torch.Tensor):
+            img = transforms.ToPILImage()(img)
+        elif isinstance(img, np.ndarray):
+            img = Image.fromarray(img)
+        img = self.transform(img)      # ToTensor + Normalize
+        return img, label
+
+
 
 # ------------------------------------------------------------
 # Stable Diffusion으로 생성된 이미지(sd32)를 CIFAR-10과 병합하는 함수
@@ -118,8 +142,10 @@ def build_cifar10_with_sd(split="train",
         train_subset, _ = create_few_shot_cifar10(
             samples_per_class=samples_per_class,
             data_dir=cifar_root,
-            seed=seed
+            seed=seed,
+            train_transform=normalize,
         )
+        
 
         # 생성 이미지(sd32) 병합
         if include_sd and Path(sd_root).exists():
